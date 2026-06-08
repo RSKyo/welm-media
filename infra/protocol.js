@@ -111,13 +111,57 @@ export function fail(error = null, meta) {
  * - 统一输出结果
  * - 捕获未处理异常并转为 fail
  */
-export async function run(main) {
+export async function run(main, options = {}) {
   try {
     const result = requireProtocolResult(await main());
-    writeProtocolJson(result);
+
+    if (options.json) {
+      writeProtocolJson(result);
+    }
+
     process.exitCode = 0;
   } catch (error) {
-    writeProtocolJson(fail(error));
+    const result = fail(error);
+
+    if (options.json) {
+      writeProtocolJson(result);
+    }
+
     process.exitCode = 1;
   }
+}
+
+let lastLength = 0;
+
+export function print(text = "", options = {}) {
+  if (options?.json) {
+    return;
+  }
+
+  if (lastLength > 0) {
+    process.stdout.write("\n");
+  }
+
+  process.stdout.write(`${text}\n`);
+  lastLength = 0;
+}
+
+export function printUpdate(text = "", options = {}) {
+  if (options?.json) {
+    return;
+  }
+
+  const padding = Math.max(0, lastLength - text.length);
+  process.stdout.write(`\r${text}${" ".repeat(padding)}`);
+  lastLength = text.length;
+}
+
+export function printDone(text = "", options = {}) {
+  if (options?.json) {
+    return;
+  }
+
+  const padding = Math.max(0, lastLength - text.length);
+  process.stdout.write(`\r${text}${" ".repeat(padding)}\n`);
+  lastLength = 0;
 }

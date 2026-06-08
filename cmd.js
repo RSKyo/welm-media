@@ -1,46 +1,22 @@
+#!/usr/bin/env node
+
 import { run } from "./infra/protocol.js";
-import { ClientError, ERROR_CODE } from "./infra/error.js";
-import { ACTION_COMMANDS } from "./cmd/action.js";
-import { DOM_COMMANDS } from "./cmd/dom.js";
-import { EMU_COMMANDS } from "./cmd/emu.js";
-import { INPUT_COMMANDS } from "./cmd/input.js";
-import { PAGE_COMMANDS } from "./cmd/page.js";
-import { TARGET_COMMANDS } from "./cmd/target.js";
-import { WAIT_COMMANDS } from "./cmd/wait.js";
+import { ERROR_CODE, createError } from "./infra/error.js";
+import { ASS_COMMANDS } from "./subtitle/cmd.js";
 
 // 一级命令分组
 const COMMAND_GROUPS = {
-  action: ACTION_COMMANDS,
-  chrome: CHROME_COMMANDS,
-  dom: DOM_COMMANDS,
-  emu: EMU_COMMANDS,
-  input: INPUT_COMMANDS,
-  screenshot: SCREENSHOT_COMMANDS,
-  target: TARGET_COMMANDS,
-  wait: WAIT_COMMANDS,
-  
+  ass: ASS_COMMANDS,
 };
 
-// node cmd.js <commandGroup> <commandName> [...args] [--options]
+const { execute, argv, options } = resolveCommand(process.argv, COMMAND_GROUPS);
 
 run(async () => {
-  const {
-    execute,
-    argv,
-    options,
-    groupName,
-    commandName,
-    command,
-  } = resolveCommand(process.argv, COMMAND_GROUPS);
-
   return await execute({
-    groupName,
-    commandName,
     argv,
     options,
-    command,
   });
-});
+}, options);
 
 function resolveCommand(processArgv, commandGroups) {
   const [, , groupName, commandName, ...rest] = processArgv;
@@ -48,14 +24,14 @@ function resolveCommand(processArgv, commandGroups) {
   const groupNames = Object.keys(commandGroups).join(", ");
 
   if (!groupName) {
-    throw new ClientError(
+    throw createError(
       ERROR_CODE.MISSING_CMD,
       `missing command group, expected one of: ${groupNames}`,
     );
   }
 
   if (!Object.hasOwn(commandGroups, groupName)) {
-    throw new ClientError(
+    throw createError(
       ERROR_CODE.INVALID_CMD,
       `unknown command group: ${groupName}, expected one of: ${groupNames}`,
     );
@@ -65,14 +41,14 @@ function resolveCommand(processArgv, commandGroups) {
   const commandNames = Object.keys(group).join(", ");
 
   if (!commandName) {
-    throw new ClientError(
+    throw createError(
       ERROR_CODE.MISSING_CMD,
       `missing command, expected one of: ${commandNames}`,
     );
   }
 
   if (!Object.hasOwn(group, commandName)) {
-    throw new ClientError(
+    throw createError(
       ERROR_CODE.INVALID_CMD,
       `unknown command: ${commandName}, expected one of: ${commandNames}`,
     );
@@ -81,7 +57,7 @@ function resolveCommand(processArgv, commandGroups) {
   const command = group[commandName];
 
   if (!command || typeof command.handler !== "function") {
-    throw new ClientError(
+    throw createError(
       ERROR_CODE.INVALID_CMD,
       `invalid command handler: ${groupName} ${commandName}`,
     );
@@ -103,6 +79,10 @@ function resolveCommand(processArgv, commandGroups) {
   };
 }
 
+function optionNameToKey(name) {
+  return name.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
 function splitArgvAndOptions(input = []) {
   const argv = [];
   const options = {};
@@ -113,14 +93,13 @@ function splitArgvAndOptions(input = []) {
       const eqIndex = body.indexOf("=");
 
       if (eqIndex === -1) {
-        options[body] = true;
+        options[optionNameToKey(body)] = true;
         continue;
       }
 
       const key = body.slice(0, eqIndex);
       const value = body.slice(eqIndex + 1);
-
-      options[key] = value;
+      options[optionNameToKey(key)] = value;
       continue;
     }
 
