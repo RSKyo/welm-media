@@ -1,6 +1,5 @@
 // subtitle/cmd.js
 
-import { ok } from "../infra/protocol.js";
 import { adjustAssTimeline } from "./ass.js";
 
 // CLI 命令注册表
@@ -20,5 +19,5 @@ export async function cmd_adjustAssTimeline(ctx) {
   const { argv, options } = ctx;
   const [input, delta] = argv;
 
-  return ok(adjustAssTimeline(input, delta, options));
+  return adjustAssTimeline(input, delta, options);
 }

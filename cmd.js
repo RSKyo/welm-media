@@ -2,7 +2,7 @@
 
 import { run } from "./infra/protocol.js";
 import { ERROR_CODE, createError } from "./infra/error.js";
-import { ASS_COMMANDS } from "./subtitle/cmd.js";
+import { ASS_COMMANDS } from "./subtitle/_cmd.js";
 
 // 一级命令分组
 const COMMAND_GROUPS = {
