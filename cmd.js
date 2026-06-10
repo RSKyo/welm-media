@@ -11,12 +11,17 @@ const COMMAND_GROUPS = {
 
 const { execute, argv, options } = resolveCommand(process.argv, COMMAND_GROUPS);
 
-run(async () => {
-  return await execute({
-    argv,
-    options,
-  });
-}, options);
+run(
+  async () => {
+    return await execute({
+      argv,
+      options,
+    });
+  },
+  {
+    json: options.json,
+  },
+);
 
 function resolveCommand(processArgv, commandGroups) {
   const [, , groupName, commandName, ...rest] = processArgv;
